@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract greedy599 is Ownable{
+contract greedy599 is Ownable {
 
     event Start(address indexed payee);
     event Invest(address indexed payee, uint256 key_price, uint256 last);
@@ -19,7 +19,11 @@ contract greedy599 is Ownable{
     // uint public balance;
     bool public break_sign = true;
 
-    function start() public payable onlyOwner{
+    constructor(address initialOwner)
+        Ownable(initialOwner)
+    {}
+
+    function start() public payable onlyOwner {
         require(msg.value == key_price && break_sign);
         investors.push(payable(msg.sender));
         record[msg.sender] = true;
@@ -53,7 +57,7 @@ contract greedy599 is Ownable{
         }
     }
 
-    function breaking() public onlyOwner{
+    function breaking() public onlyOwner {
         require(!break_sign);
         break_sign = true;
         leader.transfer(address(this).balance / 2);
