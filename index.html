@@ -1,0 +1,271 @@
+<html>
+
+<head>
+	<meta charset="utf-8">
+    <title> Greedy599 </title>
+	<style type="text/css">
+        /*p,input,button{
+            text-align: center;
+        }*/
+        div{
+            text-align: center;
+        }
+    </style>
+
+</head>
+
+<body style="background-color: black;">
+    <h1 style="color: white; font-family: Microsoft JhengHei; text-align: center;">Greedy599</h1>
+
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;">我的地址：<span id="my_address"></span></p>
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;">我的餘額：<span id="my_balance"></span></p>
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;">目前分紅：<span id="investorTokens"></span></p>
+    
+    <hr/>
+    
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;">目前合約總獎池：<span id="total_balance"></span></p>
+	
+    <!-- <p>第一位參與地址：<span id="join_address"></span></p> -->
+
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;">現在鑰匙價格：<span id="key_price"></span></p>
+
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;">現在領導者：<span id="leader"></span></p>
+
+	<!-- <p>現在參與人數：<span id="number"></span></p> -->
+
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;">此回合終止了嗎?：<span id="break_sign"></span></p>
+
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;"><span style="color:red">同步狀態：<span id="status", style="color: red;"></span></span></p>
+
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;"><span id="Check_Txt" style="color:skyblue">距離時間到還剩：<span id="Check_i">0小時0分0秒</span></span></p>
+
+	<p style="color: white; font-family: Microsoft JhengHei; text-align: center;"><span id="distributing" style="color:skyblue">距離下次分紅還剩：<span id="Check_distributing">0秒</span></span></p>
+
+	<!-- <p><span id="distributing_status" style="color:blue">分紅狀態：<span id="Check_distributing_status"></span></span></p> -->
+
+	<div>
+    <button id="invest" onclick="invest()" style="visibility: hidden; border-radius: 10px; width: 10%; height: 5%; color: white; background-color: black; font-family: Microsoft JhengHei; border-color: white;" disabled>購買 - 鑰匙</button>
+    <br/>
+	<br/>
+	<button id="start" onclick="start()" style="visibility: hidden; border-radius: 10px; width: 10%; height: 5%; color: white; background-color: black; font-family: Microsoft JhengHei; border-color: white;" disabled>回合開始</button>
+	</div>
+	<!-- <br/>
+	<br/>
+	<button id="stop" onclick="stop()">回合結束</button> -->
+
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.3.4/web3.min.js"></script>
+
+    <script>
+        // async function printPostsToConsole();
+        // async function invest();
+		// async function start();
+		// async function stop(); //測試用
+		// async function Check_Time();
+
+        var myContract;
+		var coinbase;
+		var contract_address;
+        var contract_abi;
+        var meta = false;
+        var SetSecond;
+		var owner;
+		var key_price;
+		var break_sign;
+		var intervalId;
+
+		if (typeof web3 !== 'undefined') {
+			
+		    web3 = new Web3(web3.currentProvider);
+			// alert(web3.currentProvider);
+			// if (web3 == "[object Object]"){
+				
+			// 	web3 = new Web3(new Web3.providers.HttpProvider("https://rinkeby.infura.io/v3/5f23ec7073fd43cc8eb85453da161ce6"));
+			// }
+            meta = true;
+		} else {
+		    // Set the provider you want from Web3.providers
+		    web3 = new Web3(new Web3.providers.HttpProvider("https://rinkeby.infura.io/v3/5f23ec7073fd43cc8eb85453da161ce6"));
+		}
+
+		//初始網頁內容
+		async function printPostsToConsole() {
+
+			/**合約端同步*/
+
+			$("#status").text("合約端同步中...");
+
+			if (meta) await web3.eth.requestAccounts();
+			
+			contract_address = "0x974B69442944f3Cd88Cef6bd03D6C76803EFec39";
+			contract_abi = [ { "inputs": [], "name": "breaking", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "payee", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "investorTokens", "type": "uint256" } ], "name": "Breaking", "type": "event" }, { "inputs": [], "name": "distribute", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "payee", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "investorTokens", "type": "uint256" } ], "name": "Distribute", "type": "event" }, { "inputs": [], "name": "invest", "outputs": [], "stateMutability": "payable", "type": "function" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "payee", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "key_price", "type": "uint256" }, { "indexed": false, "internalType": "uint256", "name": "last", "type": "uint256" } ], "name": "Invest", "type": "event" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "previousOwner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "newOwner", "type": "address" } ], "name": "OwnershipTransferred", "type": "event" }, { "inputs": [], "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "start", "outputs": [], "stateMutability": "payable", "type": "function" }, { "anonymous": false, "inputs": [ { "indexed": true, "internalType": "address", "name": "payee", "type": "address" } ], "name": "Start", "type": "event" }, { "inputs": [ { "internalType": "address", "name": "newOwner", "type": "address" } ], "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "break_sign", "outputs": [ { "internalType": "bool", "name": "", "type": "bool" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "name": "investors", "outputs": [ { "internalType": "address payable", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [ { "internalType": "address", "name": "", "type": "address" } ], "name": "investorTokens", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "key_price", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "last", "outputs": [ { "internalType": "uint256", "name": "", "type": "uint256" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "leader", "outputs": [ { "internalType": "address payable", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "owner", "outputs": [ { "internalType": "address", "name": "", "type": "address" } ], "stateMutability": "view", "type": "function" } ];
+			
+			myContract = new web3.eth.Contract(contract_abi, contract_address);
+			try{
+				owner = await myContract.methods.owner().call({from: "0x0000000000000000000000000000000000000000"});
+			}
+			catch{
+				alert("[Error code 1]此為Rinkeby測試合約，請確認您的錢包已調至Rinkeby測試網路後再關閉此視窗，將自動進行重新整理。\n\n" + 
+					"若您在確定錢包已調至Rinkeby測試網路並重整後仍看見此訊息，請與開發者聯絡。感謝您！");
+				// alert(meta);
+				location.reload();
+			}
+			
+			//取得合約餘額
+			var contract_balance = await web3.eth.getBalance(contract_address);
+			$("#total_balance").text(web3.utils.fromWei(contract_balance) + " ether");
+
+			key_price = await myContract.methods.key_price().call({from: owner});
+			$("#key_price").text(web3.utils.fromWei(key_price) + " ether");
+
+			leader = await myContract.methods.leader().call({from: owner});
+			$("#leader").text(leader);
+
+			break_sign = await myContract.methods.break_sign().call({from: owner});
+			$("#break_sign").text(break_sign);
+
+			// $("#Check_distributing_status").text("未分紅");
+
+			// var number = await myContract.methods.investors.length().call({from: owner});
+			// $("#number").text(number);
+
+			
+			$("#status").text("合約端同步完畢");
+
+			/**合約端同步結束*/
+			// alert("yee");
+		};
+
+		//購買
+		async function invest(){
+			try{
+				await myContract.methods.invest().send({from: coinbase, value: key_price.toString()});
+			}
+			catch{
+				alert("[Error code 3]Fail buying. Please connect your wallet and make sure that you're in a round now, or someone got that key before you.");
+			}
+			location.reload();
+		};
+
+		//回合開始
+		async function start(){
+			await myContract.methods.start().send({from: coinbase, value: key_price.toString()});
+			location.reload();
+		};
+
+		//回合強制結束
+		// async function stop(){
+		// 	alert("最後領導者為：" + await myContract.methods.leader().call({from: coinbase}));
+		// 	window.clearInterval(intervalId);
+				
+		// 	if (coinbase.toLowerCase() == owner.toLowerCase()){
+		// 		$("#Check_distributing_status").text("分紅中");
+		// 		await myContract.methods.breaking().send({from: owner});
+		// 		$("#Check_distributing_status").text("分紅完畢");
+		// 	}
+		// 	location.reload();
+		// };
+		
+		async function Check_Time() {
+			SetSecond = new Date().getTime() / 1000;
+			SetSecond -= await myContract.methods.last().call({from: coinbase});
+			SetSecond = Math.max(119 - SetSecond, 0);
+			
+			var Check_i = document.getElementById("Check_i");
+			var Check_distributing = document.getElementById("Check_distributing");
+
+			var Cal_Hour = Math.floor(SetSecond / 3600);
+			var Cal_Minute = Math.floor(Math.floor(SetSecond % 3600) / 60);
+			var Cal_Second = Math.floor(SetSecond % 60);
+
+			Check_i.innerHTML = Cal_Hour + "小時" + Cal_Minute + "分" + Cal_Second + "秒";
+			Check_distributing.innerHTML = Cal_Second + "秒";
+			if (SetSecond){
+				if (Cal_Second == 0 && Cal_Minute){
+					//1分鐘到了
+					alert("分紅囉，你將獲得： " + web3.utils.fromWei(await myContract.methods.investorTokens(coinbase).call({from: coinbase})) + " ether");
+					if (coinbase.toLowerCase() == owner.toLowerCase()) {
+						// $("#Check_distributing_status").text("分紅中");
+						await myContract.methods.distribute().send({from: owner});
+						// $("#Check_distributing_status").text("分紅完畢");
+						location.reload();
+					}
+				}
+			}
+			else{
+				window.clearInterval(intervalId);
+				alert("時間到!!最後領導者為：" + await myContract.methods.leader().call({from: coinbase}));
+				if (coinbase.toLowerCase() == owner.toLowerCase()){
+					// $("#Check_distributing_status").text("分紅中");
+					await myContract.methods.breaking().send({from: owner});
+					// $("#Check_distributing_status").text("分紅完畢");
+
+					location.reload();
+				}
+			}
+
+			leader = await myContract.methods.leader().call({from: owner});
+			$("#leader").text(leader);
+			key_price = await myContract.methods.key_price().call({from: owner});
+			$("#key_price").text(web3.utils.fromWei(key_price) + " ether");
+		};
+
+		printPostsToConsole().then(function(){
+			/**使用者端同步開始*/
+
+			if (meta){
+
+				
+				
+				//取得帳號
+				// coinbase = await web3.eth.getCoinbase(); //在Brave Brower會被擋掉(??)
+				
+				if(window.ethereum){
+					
+					ethereum.enable().then(async function(acc){
+						try{
+							$("#status").text("使用者端同步中...");
+							coinbase = acc[0];
+							$("#my_address").text(coinbase);
+							// $("#my_address").text(coinbase);
+							//取得帳號餘額
+							var balance = await web3.eth.getBalance(coinbase);
+							var myinvestorTokens = await myContract.methods.investorTokens(coinbase).call({from: coinbase});
+									
+							$("#my_balance").text(web3.utils.fromWei(balance) + " ether");  //wei 轉換成 ether web3.utils.fromWei()
+							$("#investorTokens").text(web3.utils.fromWei(myinvestorTokens) + " ether");
+
+							if (coinbase.toLowerCase() == owner.toLowerCase()){
+								document.getElementById("start").disabled = false;
+								document.getElementById("start").style.visibility = "visible";
+							}
+
+
+							$("#status").text("使用者端同步完畢");
+						}
+						catch{
+							alert("[Error code 2]此為Rinkeby測試合約，請確認您的錢包已調至Rinkeby測試網路後再關閉此視窗，將自動進行重新整理。\n\n" + 
+							"若您在確定錢包已調至Rinkeby測試網路並重整後仍看見此訊息，請與開發者聯絡。感謝您！")
+							location.reload();
+						}
+					});
+				}
+
+				
+            }
+
+			
+			/**使用者端同步結束*/
+
+			if (!break_sign){
+				document.getElementById("invest").disabled = false;
+				document.getElementById("invest").style.visibility = "visible";
+				intervalId = window.setInterval('Check_Time()', 1000);
+			}
+		});
+
+    </script>
+</body>
+
+</html>
